@@ -27,24 +27,24 @@
                                                         :case-insensitive-mode t))
 (defparameter *operator-chars* "+-*&%=<>!?|~^")
 (defparameter *operators*
-  (let ((ops (make-hash-table)))
+  (let ((ops (make-hash-table :test 'equal)))
     (dolist (op '(:in :instanceof :typeof :new :void :delete :++ :-- :+ :- :! :~ :& :|\|| :^ :* :/ :%
                   :>> :<< :>>> :< :> :<= :>= :== :=== :!= :!== :? := :+= :-= :/= :*= :%= :>>= :<<=
                   :>>>= :~= :%= :|\|=| :^= :&& :|\|\||))
-      (setf (gethash op ops) t))
+      (setf (gethash (string op) ops) op))
     ops))
 
 (defparameter *whitespace-chars* (concatenate 'string '(#\space #\tab #\return #\newline)))
 
 (defparameter *keywords*
   (let ((keywords (make-hash-table :test 'equal)))
-    (dolist (word '("break" "case" "catch" "continue" "debugger" "default" "delete" "do" "else" "false"
-                    "finally" "for" "function" "if" "in" "instanceof" "new" "null" "return" "switch"
-                    "this" "throw" "true" "try" "typeof" "var" "void" "while" "with"))
-      (setf (gethash word keywords) (intern word :keyword)))
+    (dolist (word '(:break :case :catch :continue :debugger :default :delete :do :else :false
+                    :finally :for :function :if :in :instanceof :new :null :return :switch
+                    :throw :true :try :typeof :var :void :while :with))
+      (setf (gethash (string word) keywords) word))
     keywords))
 (defparameter *keywords-before-expression* '(:return :new :delete :throw))
-(defparameter *atom-keywords* '(:false :null :this :true :undefined))
+(defparameter *atom-keywords* '(:false :null :true :undefined))
 
 (defun/defs lex-js (stream)
   (def expression-allowed t)
@@ -64,11 +64,6 @@
                    (find value "[{}(,.;:"))))
     (prog1 (make-token :type type :value value :line *line* :char *char* :newline-before newline-before)
       (setf newline-before nil)))
-  (def operator (str)
-    (let ((key (intern str :keyword)))
-      (unless (gethash key *operators*)
-        (js-parse-error "Invalid syntax."))
-      (token :operator key)))
 
   (def peek ()
     (peek-char nil stream nil))
@@ -134,8 +129,6 @@
                                  (t (write-char ch)))))))
         (end-of-file () (js-parse-error "Unterminated string constant.")))))
 
-  (def operator-char-p (ch) (find ch *operator-chars*))
-
   (def skip-line-comment ()
     (next)
     (loop :for ch := (next)
@@ -166,6 +159,14 @@
                 (read-while (lambda (ch) (find ch "gim")))))
       (end-of-file () (js-parse-error "Unterminated regular expression."))))
 
+  (def read-operator (&optional start)
+    (labels ((grow (str)
+               (let ((bigger (concatenate 'string str (string (peek)))))
+                 (if (gethash bigger *operators*)
+                     (progn (next) (grow bigger))
+                     (token :operator (gethash str *operators*))))))
+      (grow (or start (string (next))))))
+
   (def handle-slash ()
     (next)
     (case (peek)
@@ -175,14 +176,14 @@
            (next-token))
       (t (if expression-allowed
              (read-regexp)
-             (operator (concatenate 'string "/" (read-while #'operator-char-p)))))))
+             (read-operator "/")))))
 
   (def identifier-char-p (ch) (or (alphanumericp ch) (eql ch #\$) (eql ch #\_)))
   (def read-word ()
     (let* ((word (read-while #'identifier-char-p))
            (keyword (gethash word *keywords*)))
       (cond ((not keyword) (token :name word))
-            ((gethash keyword *operators*) (token :operator keyword))
+            ((gethash word *operators*) (token :operator keyword))
             ((member keyword *atom-keywords*) (token :atom keyword))
             (t (token :keyword keyword)))))
 
@@ -196,7 +197,7 @@
             ((find next "[]{}(),.;:") (token :punc (next)))
             ((eql next #\.) (handle-dot))
             ((eql next #\/) (handle-slash))
-            ((find next *operator-chars*) (operator (read-while #'operator-char-p)))
+            ((find next *operator-chars*) (read-operator))
             ((identifier-char-p next) (read-word))
             (t (js-parse-error "Unexpected character '~a'." next)))))
 
