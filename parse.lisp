@@ -131,9 +131,6 @@
                             :collect (statement)))
       (next)))
 
-  (def is-normal-assign (expr)
-    (and (eq (car expr) :assign) (eq (cadr expr) :=)))
-
   (def for* ()
     (expect #\()
     (let ((var (tokenp token :keyword :var)))
@@ -145,10 +142,9 @@
               (expect #\))
               (as :for-in var name obj (statement))))
           (with-defs
-            (def init (if (tokenp token :punc #\;) nil (expression)))
-            (when (and init var (not (is-normal-assign init)))
-              (error* "Malformed for statement."))
-            (semicolon)
+            (def init (cond (var (var*))
+                            ((tokenp token :punc #\;) (prog1 nil (semicolon)))
+                            (t (prog1 (expression) (semicolon)))))
             (def test (if (tokenp token :punc #\;) nil (expression)))
             (semicolon)
             (def step (if (tokenp token :punc #\)) nil (expression)))
