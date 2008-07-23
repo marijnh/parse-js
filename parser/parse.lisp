@@ -148,10 +148,9 @@
             (let ((obj (expression)))
               (expect #\))
               (as :for-in var name obj (statement))))
-          (with-defs
-            (def init (maybe-before-semicolon (if var #'var* #'expression)))
-            (def test (maybe-before-semicolon #'expression))
-            (def step (if (tokenp token :punc #\)) nil (expression)))
+          (let ((init (maybe-before-semicolon (if var #'var* #'expression)))
+                (test (maybe-before-semicolon #'expression))
+                (step (if (tokenp token :punc #\)) nil (expression))))
             (expect #\))
             (as :for var init test step (statement))))))
 
