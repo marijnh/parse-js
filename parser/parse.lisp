@@ -212,7 +212,7 @@
            (let ((newexp (expr-atom nil)))
              (subscripts (as :new newexp) t)))
           ((and (token-type-p token :operator) (member (token-value token) *unary-prefix*))
-           (as :unary-prefix (prog1 (token-value token) (next)) (expr-atom allow-calls)))
+           (make-unary :unary-prefix (prog1 (token-value token) (next)) (expr-atom allow-calls)))
           ((token-type-p token :punc)
            (case (token-value token)
              (#\( (next) (subscripts (prog1 (expression) (expect #\))) allow-calls))
@@ -271,8 +271,13 @@
            (let ((args (expr-list #\))))
              (subscripts (as :call expr args) t)))
           ((and (token-type-p token :operator) (member (token-value token) *unary-postfix*) allow-calls)
-           (prog1 (as :unary-postfix (token-value token) expr) (next)))
+           (prog1 (make-unary :unary-postfix (token-value token) expr) (next)))
           (t expr)))
+
+  (def make-unary (tag op expr)
+    (when (and (member op '(:++ :-- :delete)) (not (is-assignable expr)))
+      (error* "Invalid use of '~a' operator." op))
+    (as tag op expr))
 
   (def expr-op (left min-prec)
     (let* ((op (and (token-type-p token :operator) (token-value token)))
