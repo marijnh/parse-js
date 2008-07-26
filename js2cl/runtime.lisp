@@ -13,6 +13,15 @@
 (defun == (x y)
   (equal x y))
 
+(defun as-bool (val)
+  (if val :true :false))
+
+(defun not-bool (val)
+  (if val :false :true))
+
+(defun %not (val)
+  (if (eq val :true) :false :true))
+
 (defun %bool (val)
   (if (%%bool val) :true :false))
 
@@ -45,6 +54,11 @@
                  (num (ignore-errors (read-from-string val))))
              (and (realp num) num)))
       :nan))
+
+(defun %< (a b)
+  (as-bool (< a b)))
+(defun %> (a b)
+  (as-bool (> a b)))
 
 (in-package :js-runtime)
 
