@@ -41,10 +41,11 @@
     (dolist (word '(:break :case :catch :continue :debugger :default :delete :do :else :false
                     :finally :for :function :if :in :instanceof :new :null :return :switch
                     :throw :true :try :typeof :var :void :while :with))
-      (setf (gethash (string word) keywords) word))
+      (setf (gethash (string-downcase (string word)) keywords) word))
+    (setf (gethash "NaN" keywords) :nan)
     keywords))
 (defparameter *keywords-before-expression* '(:return :new :delete :throw))
-(defparameter *atom-keywords* '(:false :null :true :undefined))
+(defparameter *atom-keywords* '(:false :null :true :undefined :nan))
 
 (defun/defs lex-js (stream)
   (def expression-allowed t)

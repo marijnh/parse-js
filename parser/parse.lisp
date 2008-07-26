@@ -2,7 +2,13 @@
 
 (defparameter *unary-prefix* '(:typeof :void :delete :-- :++ :! :~ :- :+))
 (defparameter *unary-postfix* '(:-- :++))
-(defparameter *assignment* '(:= :+= :-= :/= :*= :%= :>>= :<<= :>>>= :~= :%= :|\|=| :^=))
+(defparameter *assignment*
+  (let ((assign (make-hash-table)))
+    (dolist (op '(:+= :-= :/= :*= :%= :>>= :<<= :>>>= :~= :%= :|\|=| :^=))
+      (setf (gethash op assign) (intern (subseq (string op) 0 (1- (length (string op)))) :keyword)))
+    (setf (gethash := assign) t)
+    assign))
+
 (defparameter *precedence*
   (let ((precs (make-hash-table)))
     (loop :for ops :in '((:|\|\||) (:&&) (:|\||) (:^) (:&) (:== :=== :!= :!==)
@@ -69,7 +75,7 @@
 
   (def statement (&optional allow-case)
     (case (token-type token)
-      ((:num :string :regexp :operator :atom :name) (simple-statement))
+      ((:num :string :regexp :operator :atom) (simple-statement))
       (:name (if (tokenp (peek) :punc #\:)
                  (labeled-statement (prog1 (token-value token) (skip 2)))
                  (simple-statement)))
@@ -96,7 +102,7 @@
                   (semicolon)
                   (as :do condition body))))
          (:for (for*))
-         (:function (function*))
+         (:function (function* t))
          (:if (if*))
          (:return (unless *in-function* (error* "'return' outside of function."))
                   (as :return (maybe-before-semicolon #'expression)))
@@ -158,12 +164,13 @@
                 (test (maybe-before-semicolon #'expression))
                 (step (if (tokenp token :punc #\)) nil (expression))))
             (expect #\))
-            (as :for var init test step (let ((*in-loop* t)) (statement)))))))
+            (as :for init test step (let ((*in-loop* t)) (statement)))))))
 
-  (def function* ()
+  (def function* (statement)
     (with-defs
       (def name (and (token-type-p token :name)
                      (prog1 (token-value token) (next))))
+      (when (and statement (not name)) (unexpected token))
       (expect #\()
       (def argnames (loop :for first := t :then nil
                           :until (tokenp token :punc #\))
@@ -176,7 +183,7 @@
                   (loop :until (tokenp token :punc #\})
                         :collect (statement))))
       (next)
-      (as :defun name argnames body)))
+      (as (if statement :defun :function) name argnames body)))
 
   (def if* ()
     (let ((condition (parenthesised))
@@ -232,8 +239,7 @@
              (t (unexpected token))))
           ((tokenp token :keyword :function)
            (next)
-           (let ((func (function*)))
-             (cons :function (cdr func))))
+           (function* nil))
           ((member (token-type token) '(:atom :num :string :regexp :name))
            (subscripts (prog1 (as (token-type token) (token-value token)) (next)) allow-calls))
           (t (unexpected token))))
@@ -314,9 +320,9 @@
 
   (def maybe-assign ()
     (let ((left (maybe-conditional)))
-      (if (and (token-type-p token :operator) (member (token-value token) *assignment*))
+      (if (and (token-type-p token :operator) (gethash (token-value token) *assignment*))
           (if (is-assignable left)
-              (as :assign (token-value token) left (progn (next) (maybe-assign)))
+              (as :assign (gethash (token-value token) *assignment*) left (progn (next) (maybe-assign)))
               (error* "Invalid assignment."))
           left)))
 
@@ -326,8 +332,8 @@
           (as :seq expr (progn (next) (expression)))
           expr)))
 
-  (list :toplevel (loop :until (token-type-p token :eof)
-                        :collect (statement))))
+  (as :toplevel (loop :until (token-type-p token :eof)
+                      :collect (statement))))
 
 (defun parse-js-string (string &optional strict-semicolons)
   (with-input-from-string (in string)
