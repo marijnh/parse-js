@@ -1,4 +1,4 @@
-(in-package #:parse-javascript)
+(in-package #:parse-js)
 
 (defmacro with-defs (&body body)
   (loop :for form :in body

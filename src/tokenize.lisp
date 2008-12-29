@@ -1,4 +1,4 @@
-(in-package #:parse-javascript)
+(in-package #:parse-js)
 
 (defstruct token type value line char newline-before)
 (defun tokenp (token type value)

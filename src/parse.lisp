@@ -1,4 +1,4 @@
-(in-package #:parse-javascript)
+(in-package #:parse-js)
 
 (defparameter *unary-prefix* '(:typeof :void :delete :-- :++ :! :~ :- :+))
 (defparameter *unary-postfix* '(:-- :++))
