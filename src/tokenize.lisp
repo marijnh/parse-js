@@ -13,11 +13,11 @@
 (defvar *char*)
 
 (define-condition js-parse-error (simple-error)
-  ((line :initform *line* :reader error-line)
-   (char :initform *char* :reader error-char)))
+  ((line :initform *line* :reader js-parse-error-line)
+   (char :initform *char* :reader js-parse-error-char)))
 (defmethod print-object ((err js-parse-error) stream)
   (call-next-method)
-  (format stream " (line ~a, character ~a)" (error-line err) (error-char err)))
+  (format stream " (line ~a, character ~a)" (js-parse-error-line err) (js-parse-error-char err)))
 (defun js-parse-error (control &rest args)
   (error 'js-parse-error :format-control control :format-arguments args))
 

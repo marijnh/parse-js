@@ -1,0 +1,121 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>parse-js manual</title>
+    <style type="text/css">
+p.def {
+  margin-top: 1.5em;
+  font-family: courier;
+}
+p.def span {
+  color: #555555;
+  font-weight: bold;
+  font-family: tahoma, arial, sans-serif;
+  font-size: .8em;
+}
+.desc {margin-left: 1em;}
+body {
+  margin: 0;
+  font-family: tahoma, arial, sans-serif;
+  padding: 3em 6em;
+  color: black;
+}
+    </style>
+  </head>
+  <body>
+    <h1>parse-js manual</h1>
+
+    <p>parse-js is a Common Lisp package for parsing JavaScript ... <a
+    href="http://www.mozilla.org/js/language/E262-3.pdf">ECMAScript
+    3</a>, to be more precise. It is released under a BSD-style <a
+    href="LICENSE">licence</a>. For any feedback, contact me: <a
+    href="mailto:marijnh@gmail.com">Marijn Haverbeke</a>.</p>
+
+    <p>The library can be <a
+    href="http://marijn.haverbeke.nl/parse-js/parse-js.tgz">downloaded</a>,
+    checked out from the <a
+    href="http://marijn.haverbeke.nl/darcsweb.cgi">Darcs
+    repository</a>, or installed with <a
+    href="http://www.cliki.net/ASDF-Install">asdf-install</a>.</p>
+
+    <h2>Reference</h2>
+
+    <p class="def" id="parse-js">
+      <span>function</span> parse-js (stream &amp;optional strict-semicolons)
+      <br/>&#8594; syntax-tree
+    </p>
+
+    <p class="desc">Reads a program from a stream, and produces an
+    abstract syntax tree, which is a nested structure consisting of
+    lists starting with keywords. The exact format of this structure
+    is, I am afraid, not currently documented, but can be rather
+    easily figured out by trying things out or looking at the source
+    code of the parser.</p>
+
+    <p class="desc">When <code>strict-semicolons</code> is true, the
+    parser will complain about missing semicolons, even when they
+    would have been inserted by 'automatic semicolon insertion'
+    rules.</p>
+
+    <p class="def" id="parse-js-string">
+      <span>function</span> parse-js-string (string &amp;optional strict-semicolons)
+      <br/>&#8594; syntax-tree
+    </p>
+
+    <p class="desc">Like <a
+    href="#parse-js"><code>parse-js</code></a>, but takes a string as
+    input instead of a stream.</p>
+
+    <p class="def" id="js-parse-error">
+      <span>class</span> js-parse-error
+    </p>
+
+    <p class="desc">The type of errors raised when invalid input is
+    encountered. Inherits from <a
+    href="http://www.lispworks.com/documentation/HyperSpec/Body/e_smp_er.htm"><code>simple-error</code></a>,
+    and has <code>js-parse-error-line</code> and
+    <code>js-parse-error-character</code> accessors that can be used
+    to read the location at which the error occurred.</p>
+
+    <p class="def" id="lex-js">
+      <span>function</span> lex-js (stream)
+      <br/>&#8594; function
+    </p>
+
+    <p class="desc">A JavaScript tokeniser. The function returned can
+    be called repeatedly to read the next token object. See below for
+    a description of these objects. When the end of the stream is
+    reached, tokens with type <code>:eof</code> are returned.</p>
+
+    <p class="def" id="token-type">
+      <span>function</span> token-type (token)
+      <br/>&#8594; keyword
+    </p>
+
+    <p class="desc">Reader for the type of token objects. Types are
+    keywords (one of <code>:num :punc :string :operator :name :atom
+    :keyword :eof</code>).</p>
+
+    <p class="def" id="token-value">
+      <span>function</span> token-value (token)
+      <br/>&#8594; value
+    </p>
+
+    <p class="desc">Reader for the content of token objects. The type
+    of this value depends on the type of the token &#x2015; it holds
+    strings for names, for example, and numbers for number tokens.</p>
+
+    <p class="def" id="token-line">
+      <span>function</span> token-line (token)
+      <br/>&#8594; number
+    </p>
+
+    <p class="desc">The line on which a token was read.</p>
+
+    <p class="def" id="token-char">
+      <span>function</span> token-char (token)
+      <br/>&#8594; number
+    </p>
+
+    <p class="desc">The character at which a token starts.</p>
+  </body>
+</html>
