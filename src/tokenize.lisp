@@ -31,7 +31,7 @@
     (dolist (op '(:in :instanceof :typeof :new :void :delete :++ :-- :+ :- :! :~ :& :|\|| :^ :* :/ :%
                   :>> :<< :>>> :< :> :<= :>= :== :=== :!= :!== :? := :+= :-= :/= :*= :%= :>>= :<<=
                   :>>>= :~= :%= :|\|=| :^= :&& :|\|\||))
-      (setf (gethash (string op) ops) op))
+      (setf (gethash (string-downcase (string op)) ops) op))
     ops))
 
 (defparameter *whitespace-chars* (concatenate 'string '(#\space #\tab #\return #\newline)))
