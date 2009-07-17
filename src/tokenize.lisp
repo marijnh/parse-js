@@ -149,7 +149,7 @@
                   (loop :with backslash := nil
                         :for ch := (next t)
                         :until (and (not backslash) (eql ch #\/))
-                        :do (setf backslash (eql ch #\\))
+                        :do (setf backslash (and (eql ch #\\) (not backslash)))
                         ;; Handle \u sequences, since CL-PPCRE does not understand them.
                         :do (write-char (if (and (eql ch #\\) (eql (peek) #\u))
                                             (progn
