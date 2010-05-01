@@ -213,7 +213,7 @@
     (let ((name (token-value token)) val)
       (next)
       (when (tokenp token :operator :=)
-        (next) (setf val (expression)))
+        (next) (setf val (expression nil)))
       (if (tokenp token :punc #\,)
           (progn (next) (cons (cons name val) (vardefs)))
           (list (cons name val)))))
