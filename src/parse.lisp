@@ -55,6 +55,7 @@
     (cond (strict-semicolons (expect #\;))
           ((tokenp token :punc #\;) (next))
           ((not (or (token-newline-before token)
+                    (token-type-p token :eof)
                     (tokenp token :punc #\}))) (unexpected token))))
 
   (def as (type &rest args)
