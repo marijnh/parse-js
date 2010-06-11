@@ -1,38 +1,43 @@
-:if
-:case
-:debugger
-:default
-:do
-:return
-:switch
-:throw
-:while
-:with
-:label
-:stat
-:break
-:continue
-:block
-:for-in
-:for
-:defun
-:if
-:try
-:var
-:new
-:atom
-:num
-:string
-:regexp
-:name
-:array
-:object
-:dot
-:sub
-:call
-:unary-prefix
-:unary-postfix
-:binary
-:conditional
-:assign
-:seq
+(:atom atom)
+(:num num)
+(:string str)
+(:name name)
+(:array elems)
+(:object properties)
+(:regexp expr)
+
+(:assign op place val)
+(:binary op lhs rhs)
+(:unary-postfix op place)
+(:unary-prefix op place)
+(:call func args)
+(:dot obj attr)
+(:sub obj attr)
+(:seq form1 result)
+(:conditional test then else)
+(:function name args stat*)
+(:new func args)
+
+(:toplevel stat*)
+(:block stat*)
+(:stat form)
+(:label name form)
+(:if test then else)
+(:with obj body)
+(:var bindings)
+(:defun name args stat*)
+(:return value)
+(:debugger)
+
+(:try body catch finally)
+(:throw expr)
+
+(:break label)
+(:continue label)
+(:while cond body)
+(:do cond body)
+(:for init cond step body)
+(:for-in var name obj body)
+(:switch val body)
+(:case expr)
+(:default)
