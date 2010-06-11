@@ -84,7 +84,7 @@
       (:punc (case (token-value token)
                (#\{ (next) (block*))
                ((#\[ #\() (simple-statement))
-               (#\; (next) (as :block))
+               (#\; (next) (as :block ()))
                (t (unexpected token))))
       (:keyword
        (case (prog1 (token-value token) (next))
