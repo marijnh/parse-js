@@ -4,7 +4,7 @@
 (:name name)
 (:array elems)
 (:object properties)
-(:regexp expr)
+(:regexp expr flags)
 
 (:assign op place val)
 (:binary op lhs rhs)

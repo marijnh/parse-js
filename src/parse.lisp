@@ -243,7 +243,10 @@
            (next)
            (function* nil))
           ((member (token-type token) '(:atom :num :string :regexp :name))
-           (subscripts (prog1 (as (token-type token) (token-value token)) (next)) allow-calls))
+           (let ((atom (if (eq (token-type token) :regexp)
+                           (as :regexp (car (token-value token)) (cdr (token-value token)))
+                           (as (token-type token) (token-value token)))))
+             (subscripts (prog1 atom (next)) allow-calls)))
           (t (unexpected token))))
 
   (def expr-list (closing)
