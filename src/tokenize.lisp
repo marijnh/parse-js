@@ -47,6 +47,14 @@
 (defparameter *keywords-before-expression* '(:return :new :delete :throw))
 (defparameter *atom-keywords* '(:false :null :true :undefined :nan))
 
+(defun read-js-number (string)
+  (cond ((cl-ppcre:scan *hex-number* string)
+         (parse-integer string :start 2 :radix 16))
+        ((cl-ppcre:scan *octal-number* string)
+         (parse-integer string :start 1 :radix 8))
+        ((cl-ppcre:scan *decimal-number* string)
+         (read-from-string string))))
+
 (defun/defs lex-js (stream)
   (def expression-allowed t)
   (def newline-before nil)
@@ -89,13 +97,10 @@
   (def read-num (start)
     (let ((num (read-while (lambda (ch) (or (alphanumericp ch) (eql ch #\.) (eql ch #\-))))))
       (when start (setf num (concatenate 'string start num)))
-      (cond ((cl-ppcre:scan *hex-number* num)
-             (token :num (parse-integer num :start 2 :radix 16)))
-            ((cl-ppcre:scan *octal-number* num)
-             (token :num (parse-integer num :start 1 :radix 8)))
-            ((cl-ppcre:scan *decimal-number* num)
-             (token :num (read-from-string num)))
-            (t (js-parse-error "Invalid syntax: '~a'." num)))))
+      (let ((valid (read-js-number num)))
+        (if valid
+            (token :num valid)
+            (js-parse-error "Invalid syntax: '~a'." num)))))
 
   (def handle-dot ()
     (next)
