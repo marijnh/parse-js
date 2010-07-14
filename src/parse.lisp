@@ -241,7 +241,7 @@
              (t (unexpected token))))
           ((tokenp token :keyword :function)
            (next)
-           (function* nil))
+           (subscripts (function* nil) allow-calls))
           ((member (token-type token) '(:atom :num :string :regexp :name))
            (let ((atom (if (eq (token-type token) :regexp)
                            (as :regexp (car (token-value token)) (cdr (token-value token)))
