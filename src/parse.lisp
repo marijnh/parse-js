@@ -297,7 +297,7 @@
           (t expr)))
 
   (def make-unary (tag op expr)
-    (when (and (member op '(:++ :-- :delete)) (not (is-assignable expr)))
+    (when (and (member op '(:++ :--)) (not (is-assignable expr)))
       (error* "Invalid use of '~a' operator." op))
     (as tag op expr))
 
