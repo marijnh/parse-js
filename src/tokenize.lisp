@@ -48,12 +48,16 @@
 (defparameter *atom-keywords* '(:false :null :true :undefined :nan))
 
 (defun read-js-number (string)
-  (cond ((cl-ppcre:scan *hex-number* string)
-         (parse-integer string :start 2 :radix 16))
-        ((cl-ppcre:scan *octal-number* string)
-         (parse-integer string :start 1 :radix 8))
-        ((cl-ppcre:scan *decimal-number* string)
-         (read-from-string string))))
+  (if (and (> (length string) 1) (eql (char string 0) #\0))
+      (cond ((cl-ppcre:scan *hex-number* string)
+             (values (parse-integer string :start 2 :radix 16)))
+            ((cl-ppcre:scan *octal-number* string)
+             (values (parse-integer string :start 1 :radix 8))))
+      (multiple-value-bind (val pos) (parse-integer string :junk-allowed t)
+        (if (eql pos (length string))
+            val
+            (when (cl-ppcre:scan *decimal-number* string)
+              (values (read-from-string string)))))))
 
 (defun/defs lex-js (stream)
   (def expression-allowed t)
