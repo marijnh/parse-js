@@ -317,7 +317,7 @@
       (if (tokenp token :operator :?)
           (let ((yes (progn (next) (expr-ops))))
             (expect #\:)
-            (as :conditional expr yes (expr-ops)))
+            (as :conditional expr yes (maybe-conditional)))
           expr)))
 
   (def is-assignable (expr)
