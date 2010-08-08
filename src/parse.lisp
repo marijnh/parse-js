@@ -315,9 +315,9 @@
   (def maybe-conditional ()
     (let ((expr (expr-ops)))
       (if (tokenp token :operator :?)
-          (let ((yes (progn (next) (expr-ops))))
+          (let ((yes (progn (next) (expression))))
             (expect #\:)
-            (as :conditional expr yes (maybe-conditional)))
+            (as :conditional expr yes (expression)))
           expr)))
 
   (def is-assignable (expr)
