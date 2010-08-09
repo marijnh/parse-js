@@ -99,7 +99,9 @@
             :do (princ (next)))))
 
   (def read-num (start)
-    (let ((num (read-while (lambda (ch) (or (alphanumericp ch) (eql ch #\.) (eql ch #\-))))))
+    (let ((minus (and (eql (peek) #\-) (next)))
+          (num (read-while (lambda (ch) (or (alphanumericp ch) (eql ch #\.))))))
+      (when minus (setf num (concatenate 'string "-" num)))
       (when start (setf num (concatenate 'string start num)))
       (let ((valid (read-js-number num)))
         (if valid
