@@ -48,7 +48,8 @@
 (defparameter *atom-keywords* '(:false :null :true :undefined :nan))
 
 (defun read-js-number (string)
-  (if (and (> (length string) 1) (eql (char string 0) #\0))
+  (if (and (> (length string) 1) (eql (char string 0) #\0)
+           (not (cl-ppcre:scan "[\\.eE]" string)))
       (cond ((cl-ppcre:scan *hex-number* string)
              (values (parse-integer string :start 2 :radix 16)))
             ((cl-ppcre:scan *octal-number* string)
