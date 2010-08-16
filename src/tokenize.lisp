@@ -158,17 +158,19 @@
         (token :regexp
                (cons
                 (with-output-to-string (*standard-output*)
-                  (loop :with backslash := nil
-                        :for ch := (next t)
-                        :until (and (not backslash) (eql ch #\/))
-                        :do (setf backslash (and (eql ch #\\) (not backslash)))
-                        ;; Handle \u sequences, since CL-PPCRE does not understand them.
-                        :do (write-char (if (and (eql ch #\\) (eql (peek) #\u))
-                                            (progn
-                                              (setf backslash nil)
-                                              (next)
-                                              (code-char (hex-bytes 4)))
-                                            ch))))
+                  (loop :with backslash := nil :with inset := 0
+                        :for ch := (next t) :until (and (not backslash) (zerop inset) (eql ch #\/)) :do
+                     (setf backslash (and (eql ch #\\) (not backslash)))
+                     (unless backslash
+                       (when (eql ch #\[) (incf inset))
+                       (when (and (> inset 0) (eql ch #\])) (decf inset)))
+                     ;; Handle \u sequences, since CL-PPCRE does not understand them.
+                     (write-char (if (and (eql ch #\\) (eql (peek) #\u))
+                                     (progn
+                                       (setf backslash nil)
+                                       (next)
+                                       (code-char (hex-bytes 4)))
+                                     ch))))
                 (read-while (lambda (ch) (find ch "gim")))))
       (end-of-file () (js-parse-error "Unterminated regular expression."))))
 
