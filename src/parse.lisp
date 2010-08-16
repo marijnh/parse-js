@@ -56,8 +56,9 @@
          (or (token-newline-before token)
              (token-type-p token :eof)
              (tokenp token :punc #\}))))
+  (def semicolonp () (tokenp token :punc #\;))
   (def semicolon ()
-    (cond ((tokenp token :punc #\;) (next))
+    (cond ((semicolonp) (next))
           ((not (can-insert-semicolon)) (unexpected token))))
 
   (def as (type &rest args)
@@ -67,17 +68,6 @@
 
   (def parenthesised ()
     (expect #\() (prog1 (expression) (expect #\))))
-
-  (def maybe-before-semicolon (func)
-    (catch 'return
-      (let ((start token))
-        (flet ((handle (e)
-                 (declare (ignore e))
-                 (when (eq token start)
-                   (cond ((tokenp token :punc #\;) (next) (throw 'return nil))
-                         ((can-insert-semicolon) (throw 'return nil))))))
-          (handler-bind ((js-parse-error #'handle))
-            (prog1 (funcall func) (semicolon)))))))
 
   (def statement (&optional allow-case)
     (case (token-type token)
@@ -111,7 +101,10 @@
          (:function (function* t))
          (:if (if*))
          (:return (unless *in-function* (error* "'return' outside of function."))
-                  (as :return (maybe-before-semicolon #'expression)))
+                  (as :return
+                      (cond ((semicolonp) (next) nil)
+                            ((can-insert-semicolon) nil)
+                            (t (prog1 (expression) (semicolon))))))
          (:switch (let ((val (parenthesised)))
                     (expect #\{)
                     (let ((body (let ((*in-loop* t))
@@ -166,8 +159,8 @@
             (let ((obj (expression)))
               (expect #\))
               (as :for-in var name obj (let ((*in-loop* t)) (statement)))))
-          (let ((init (maybe-before-semicolon (if var #'var* #'expression)))
-                (test (maybe-before-semicolon #'expression))
+          (let ((init (prog1 (cond ((semicolonp) nil) (var (var*)) (t (expression))) (expect #\;)))
+                (test (prog1 (unless (semicolonp) (expression)) (expect #\;)))
                 (step (if (tokenp token :punc #\)) nil (expression))))
             (expect #\))
             (as :for init test step (let ((*in-loop* t)) (statement)))))))
