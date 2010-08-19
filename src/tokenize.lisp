@@ -84,7 +84,7 @@
   (def next (&optional eof-error)
     (let ((ch (read-char stream eof-error)))
       (when ch
-        (if (eql ch #\newline)
+        (if (member ch '#.(list #\newline (code-char #x2028) (code-char #x2029)))
             (setf line (1+ line) char 0 newline-before t)
             (incf char)))
       ch))
