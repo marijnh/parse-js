@@ -162,12 +162,12 @@
         (token :regexp
                (cons
                 (with-output-to-string (*standard-output*)
-                  (loop :with backslash := nil :with inset := 0
-                        :for ch := (next t) :until (and (not backslash) (zerop inset) (eql ch #\/)) :do
-                     (setf backslash (and (eql ch #\\) (not backslash)))
+                  (loop :with backslash := nil :with inset := nil
+                        :for ch := (next t) :until (and (not backslash) (not inset) (eql ch #\/)) :do
                      (unless backslash
-                       (when (eql ch #\[) (incf inset))
-                       (when (and (> inset 0) (eql ch #\])) (decf inset)))
+                       (when (eql ch #\[) (setf inset t))
+                       (when (and inset (not backslash) (eql ch #\])) (setf inset nil)))
+                     (setf backslash (and (eql ch #\\) (not backslash)))
                      ;; Handle \u sequences, since CL-PPCRE does not understand them.
                      (write-char (if (and (eql ch #\\) (eql (peek) #\u))
                                      (progn
