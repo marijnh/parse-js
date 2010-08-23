@@ -291,8 +291,8 @@
            (next)
            (let ((args (expr-list #\))))
              (subscripts (as :call expr args) t)))
-          ((and (token-type-p token :operator) (member (token-value token) *unary-postfix*) allow-calls)
-           (prog1 (make-unary :unary-postfix (token-value token) expr) (next)))
+          ((and (token-type-p token :operator) (member (token-value token) *unary-postfix*))
+           (subscripts (prog1 (make-unary :unary-postfix (token-value token) expr) (next)) allow-calls))
           (t expr)))
 
   (def make-unary (tag op expr)

@@ -71,7 +71,8 @@
           *char* char))
   (def token (type value)
     (setf expression-allowed
-          (or (eq type :operator)
+          (or (and (eq type :operator)
+                   (not (member value '("++" "--") :test #'string=)))
               (and (eq type :keyword)
                    (member value *keywords-before-expression*))
               (and (eq type :punc)
