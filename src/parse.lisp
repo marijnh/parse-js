@@ -122,9 +122,7 @@
 
   (def labeled-statement (label)
     (push label labels)
-    (let ((start token)
-          (stat (statement)))
-      (unless (member (car stat) '(:for :do :while :switch)) (unexpected start))
+    (let ((stat (statement)))
       (pop labels)
       (as :label label stat)))
 
