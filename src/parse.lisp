@@ -70,6 +70,12 @@
     (expect #\() (prog1 (expression) (expect #\))))
 
   (def statement (&optional allow-case)
+    ;; if expecting a statement and found a slash as operator,
+    ;; it must be a literal regexp.
+    (when (and (eq (token-type token) :operator)
+               (eq (token-value token) :/))
+      (setf peeked nil
+            token (funcall input t)))
     (case (token-type token)
       ((:num :string :regexp :operator :atom) (simple-statement))
       (:name (if (tokenp (peek) :punc #\:)

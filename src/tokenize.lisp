@@ -65,7 +65,6 @@
   (def newline-before nil)
   (def line 1)
   (def char 0)
-  (def paren-stack ())
 
   (def start-token ()
     (setf *line* line
@@ -77,10 +76,7 @@
               (and (eq type :keyword)
                    (member value *keywords-before-expression*))
               (and (eq type :punc)
-                   (case value
-                     (#\( (push expression-allowed paren-stack) t)
-                     (#\) (not (pop paren-stack)))
-                     (t (find value "[{},.;:"))))))
+                   (find value "[{}(,.;:"))))
     (prog1 (make-token :type type :value value :line *line* :char *char* :newline-before newline-before)
       (setf newline-before nil)))
 
@@ -211,18 +207,21 @@
             ((member keyword *atom-keywords*) (token :atom keyword))
             (t (token :keyword keyword)))))
 
-  (def next-token ()
-    (skip-whitespace)
-    (start-token)
-    (let ((next (peek)))
-      (cond ((not next) (token :eof "EOF"))
-            ((digit-char-p next) (read-num nil))
-            ((find next "'\"") (read-string))
-            ((eql next #\.) (handle-dot))
-            ((find next "[]{}(),;:") (token :punc (next)))
-            ((eql next #\/) (handle-slash))
-            ((find next *operator-chars*) (read-operator))
-            ((identifier-char-p next) (read-word))
-            (t (js-parse-error "Unexpected character '~a'." next)))))
+  (def next-token (&optional force-regexp)
+    (if force-regexp
+        (read-regexp)
+        (progn
+          (skip-whitespace)
+          (start-token)
+          (let ((next (peek)))
+            (cond ((not next) (token :eof "EOF"))
+                  ((digit-char-p next) (read-num nil))
+                  ((find next "'\"") (read-string))
+                  ((eql next #\.) (handle-dot))
+                  ((find next "[]{}(),;:") (token :punc (next)))
+                  ((eql next #\/) (handle-slash))
+                  ((find next *operator-chars*) (read-operator))
+                  ((identifier-char-p next) (read-word))
+                  (t (js-parse-error "Unexpected character '~a'." next)))))))
 
   #'next-token)
