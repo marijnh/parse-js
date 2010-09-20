@@ -44,7 +44,7 @@
       (setf (gethash (string-downcase (string word)) keywords) word))
     (setf (gethash "NaN" keywords) :nan)
     keywords))
-(defparameter *keywords-before-expression* '(:return :new :delete :throw))
+(defparameter *keywords-before-expression* '(:return :new :delete :throw :else))
 (defparameter *atom-keywords* '(:false :null :true :undefined :nan))
 
 (defun read-js-number (string)
@@ -65,6 +65,7 @@
   (def newline-before nil)
   (def line 1)
   (def char 0)
+  (def paren-stack ())
 
   (def start-token ()
     (setf *line* line
@@ -76,7 +77,10 @@
               (and (eq type :keyword)
                    (member value *keywords-before-expression*))
               (and (eq type :punc)
-                   (find value "[{}(,.;:"))))
+                   (case value
+                     (#\( (push expression-allowed paren-stack) t)
+                     (#\) (not (pop paren-stack)))
+                     (t (find value "[{},.;:"))))))
     (prog1 (make-token :type type :value value :line *line* :char *char* :newline-before newline-before)
       (setf newline-before nil)))
 
