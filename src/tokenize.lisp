@@ -34,7 +34,8 @@
       (setf (gethash (string-downcase (string op)) ops) op))
     ops))
 
-(defparameter *whitespace-chars* (concatenate 'string '(#\space #\tab #\return #\newline)))
+(defparameter *whitespace-chars* (concatenate 'string (list #\space #\tab #\return #\newline (code-char #x2028) (code-char #x2029))))
+(defparameter *line-terminators* (concatenate 'string (list #\newline #\return (code-char #x2028) (code-char #x2029))))
 
 (defparameter *keywords*
   (let ((keywords (make-hash-table :test 'equal)))
@@ -85,7 +86,7 @@
   (def next (&optional eof-error)
     (let ((ch (read-char stream eof-error)))
       (when ch
-        (if (member ch '#.(list #\newline (code-char #x2028) (code-char #x2029)))
+        (if (find ch *line-terminators*)
             (setf line (1+ line) char 0 newline-before t)
             (incf char)))
       ch))
@@ -104,7 +105,7 @@
     (let* ((minus (and (eql (peek) #\-) (next)))
            (last-char #\x)
            (num (read-while (lambda (ch)
-                              (prog1 (or (alphanumericp ch) (eql ch #\.)
+                              (prog1 (or (and (alphanumericp ch) (< (char-code ch) 127)) (eql ch #\.)
                                          (and (eql ch #\-) (char-equal last-char #\e)))
                                 (setf last-char ch))))))
       (when minus (setf num (concatenate 'string "-" num)))
@@ -135,14 +136,15 @@
         (#\b #\backspace) (#\v #\vt) (#\f #\page) (#\0 #\null)
         (#\x (code-char (hex-bytes 2)))
         (#\u (code-char (hex-bytes 4)))
-        (t ch))))
+        (#\newline nil) (t ch))))
   (def read-string ()
     (let ((quote (next)))
       (handler-case
           (token :string
                  (with-output-to-string (*standard-output*)
                    (loop (let ((ch (next t)))
-                           (cond ((eql ch #\\) (write-char (read-escaped-char)))
+                           (cond ((eql ch #\\) (let ((ch (read-escaped-char))) (when ch (write-char ch))))
+                                 ((find ch *line-terminators*) (js-parse-error "Line terminator inside of string."))
                                  ((eql ch quote) (return))
                                  (t (write-char ch)))))))
         (end-of-file () (js-parse-error "Unterminated string constant.")))))
@@ -150,7 +152,7 @@
   (def skip-line-comment ()
     (next)
     (loop :for ch := (next)
-          :until (or (eql ch #\newline) (not ch))))
+          :until (or (find ch *line-terminators*) (not ch))))
   (def skip-multiline-comment ()
     (next)
     (loop :with star := nil
@@ -198,7 +200,7 @@
              (read-regexp)
              (read-operator "/")))))
 
-  (def identifier-char-p (ch) (or (alphanumericp ch) (eql ch #\$) (eql ch #\_)))
+  (def identifier-char-p (ch) (or (and (alphanumericp ch) (not (find ch *whitespace-chars*))) (eql ch #\$) (eql ch #\_)))
   (def read-word ()
     (let* ((word (read-while #'identifier-char-p))
            (keyword (gethash word *keywords*)))
