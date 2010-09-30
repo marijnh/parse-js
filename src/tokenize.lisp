@@ -157,8 +157,8 @@
   (def skip-multiline-comment ()
     (next)
     (loop :with star := nil
-          :for ch := (next)
-          :until (or (not ch) (and star (eql ch #\/)))
+          :for ch := (or (next) (js-parse-error "Unterminated comment."))
+          :until (and star (eql ch #\/))
           :do (setf star (eql ch #\*))))
 
   (def read-regexp ()
