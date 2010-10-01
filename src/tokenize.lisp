@@ -43,6 +43,16 @@
     keywords))
 (defparameter *keywords-before-expression* '(:return :new :delete :throw :else))
 (defparameter *atom-keywords* '(:false :null :true :undefined))
+(defparameter *reserved-words*
+  (let ((words (make-hash-table :test 'equal)))
+    (dolist (word '("abstract" "enum" "int" "short" "boolean" "export" "interface" "static"
+                    "byte" "extends" "long" "super" "char" "final" "native" "synchronized"
+                    "class" "float" "package" "throws" "const" "goto" "private" "transient"
+                    "debugger" "implements" "protected" "volatile" "double" "import" "public"))
+      (setf (gethash word words) t))
+    words))
+(defparameter *check-for-reserved-words* t)
+
 
 (defun read-js-number (stream &key junk-allowed start-char)
   (labels ((peek () (if start-char start-char (peek-char nil stream nil)))
@@ -222,7 +232,9 @@
                             ((and ch (identifier-char-p ch)) (write-char (next)))
                             (t (return))))))
            (keyword (and (not unicode-escape) (gethash word *keywords*))))
-      (cond ((not keyword) (token :name word))
+      (cond ((and *check-for-reserved-words* (not unicode-escape) (gethash word *reserved-words*))
+             (js-parse-error "'~a' is a reserved word." word))
+            ((not keyword) (token :name word))
             ((gethash word *operators*) (token :operator keyword))
             ((member keyword *atom-keywords*) (token :atom keyword))
             (t (token :keyword keyword)))))

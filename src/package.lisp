@@ -2,4 +2,5 @@
   (:use #:cl)
   (:export #:token-type #:token-value #:token-line #:token-char #:token-newline-before
            #:lex-js #:parse-js #:parse-js-string #:read-js-number
-           #:js-parse-error #:js-parse-error-line #:js-parse-error-character))
+           #:js-parse-error #:js-parse-error-line #:js-parse-error-character
+           #:*check-for-reserved-words*))
