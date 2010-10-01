@@ -122,21 +122,21 @@
         (read-num ".")
         (token :punc #\.)))
 
-  (def hex-bytes (n)
+  (def hex-bytes (n char)
     (loop :with num := 0
           :for pos :from (1- n) :downto 0
           :do (let ((digit (digit-char-p (next t) 16)))
                 (if digit
                     (incf num (* digit (expt 16 pos)))
-                    (js-parse-error "Invalid hex-character pattern in string.")))
+                    (js-parse-error "Invalid \\~a escape pattern." char)))
           :finally (return num)))
   (def read-escaped-char ()
     (let ((ch (next t)))
       (case ch
         (#\n #\newline) (#\r #\return) (#\t #\tab)
         (#\b #\backspace) (#\v #\vt) (#\f #\page) (#\0 #\null)
-        (#\x (code-char (hex-bytes 2)))
-        (#\u (code-char (hex-bytes 4)))
+        (#\x (code-char (hex-bytes 2 #\x)))
+        (#\u (code-char (hex-bytes 4 #\u)))
         (#\newline nil) (t ch))))
   (def read-string ()
     (let ((quote (next)))
@@ -177,7 +177,7 @@
                                      (progn
                                        (setf backslash nil)
                                        (next)
-                                       (code-char (hex-bytes 4)))
+                                       (code-char (hex-bytes 4 #\u)))
                                      ch))))
                 (read-while (lambda (ch) (find ch "gim")))))
       (end-of-file () (js-parse-error "Unterminated regular expression."))))
@@ -203,8 +203,17 @@
 
   (def identifier-char-p (ch) (or (and (alphanumericp ch) (not (find ch *whitespace-chars*))) (eql ch #\$) (eql ch #\_)))
   (def read-word ()
-    (let* ((word (read-while #'identifier-char-p))
-           (keyword (gethash word *keywords*)))
+    (let* ((unicode-escape nil)
+           (word (with-output-to-string (*standard-output*)
+                   (loop :for ch := (peek) :do
+                      (cond ((eql ch #\\)
+                             (next)
+                             (unless (eql (next) #\u) (js-parse-error "Unrecognized escape in identifier."))
+                             (write-char (code-char (hex-bytes 4 #\u)))
+                             (setf unicode-escape t))
+                            ((and ch (identifier-char-p ch)) (write-char (next)))
+                            (t (return))))))
+           (keyword (and (not unicode-escape) (gethash word *keywords*))))
       (cond ((not keyword) (token :name word))
             ((gethash word *operators*) (token :operator keyword))
             ((member keyword *atom-keywords*) (token :atom keyword))
@@ -224,7 +233,7 @@
                   ((find next "[]{}(),;:") (token :punc (next)))
                   ((eql next #\/) (handle-slash))
                   ((find next *operator-chars*) (read-operator))
-                  ((identifier-char-p next) (read-word))
+                  ((or (identifier-char-p next) (eql next #\\)) (read-word))
                   (t (js-parse-error "Unexpected character '~a'." next)))))))
 
   #'next-token)
