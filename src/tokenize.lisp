@@ -44,10 +44,9 @@
                     :finally :for :function :if :in :instanceof :new :null :return :switch
                     :throw :true :try :typeof :var :void :while :with))
       (setf (gethash (string-downcase (string word)) keywords) word))
-    (setf (gethash "NaN" keywords) :nan)
     keywords))
 (defparameter *keywords-before-expression* '(:return :new :delete :throw :else))
-(defparameter *atom-keywords* '(:false :null :true :undefined :nan))
+(defparameter *atom-keywords* '(:false :null :true :undefined))
 
 (defun read-js-number (string)
   (if (and (> (length string) 1) (eql (char string 0) #\0)
