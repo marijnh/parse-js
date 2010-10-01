@@ -328,7 +328,8 @@
           expr)))
 
   (def is-assignable (expr)
-    (member (car expr) '(:name :dot :sub)))
+    (case (car expr)
+      ((:dot :sub) t) (:name (not (equal (second expr) "this")))))
 
   (def maybe-assign ()
     (let ((left (maybe-conditional)))
