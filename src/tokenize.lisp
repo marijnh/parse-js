@@ -26,7 +26,7 @@
   (let ((ops (make-hash-table :test 'equal)))
     (dolist (op '(:in :instanceof :typeof :new :void :delete :++ :-- :+ :- :! :~ :& :|\|| :^ :* :/ :%
                   :>> :<< :>>> :< :> :<= :>= :== :=== :!= :!== :? := :+= :-= :/= :*= :%= :>>= :<<=
-                  :>>>= :~= :%= :|\|=| :^= :&& :|\|\||))
+                  :>>>= :~= :%= :|\|=| :^= :&= :&& :|\|\||))
       (setf (gethash (string-downcase (string op)) ops) op))
     ops))
 
