@@ -112,9 +112,7 @@
          (:switch (let ((val (parenthesised)))
                     (expect #\{)
                     (let ((body (let ((*in-loop* t))
-                                  (loop :until (tokenp token :punc #\})
-                                        :collect (statement t)))))
-                      (next)
+                                  (some-statemets t))))
                       (as :switch val body))))
          (:throw (let ((ex (expression))) (semicolon) (as :throw ex)))
          (:try (try*))
@@ -123,6 +121,14 @@
          (:with (as :with (parenthesised) (statement)))
          (t (unexpected token))))
       (t (unexpected token))))
+
+  (def some-statemets (&optional allow-case)
+    (prog1
+        (loop :until (tokenp token :punc #\})
+           :for stmt = (statement allow-case)
+           :unless (and (eq (car stmt) :block)
+                        (not (cadr stmt))) :collect stmt)
+      (next)))
 
   (def labeled-statement (label)
     (push label labels)
@@ -147,9 +153,7 @@
                       name)))))
 
   (def block* ()
-    (prog1 (as :block (loop :until (tokenp token :punc #\})
-                            :collect (statement)))
-      (next)))
+    (as :block (some-statemets)))
 
   (def for* ()
     (expect #\()
@@ -181,9 +185,7 @@
       (next)
       (expect #\{)
       (def body (let ((*in-function* t) (*in-loop* nil))
-                  (loop :until (tokenp token :punc #\})
-                        :collect (statement))))
-      (next)
+                  (some-statemets)))
       (as (if statement :defun :function) name argnames body)))
 
   (def if* ()
@@ -194,7 +196,7 @@
         (next)
         (setf else (statement)))
       (as :if condition body else)))
-      
+
   (def ensure-block ()
     (expect #\{)
     (block*))
