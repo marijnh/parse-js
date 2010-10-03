@@ -346,7 +346,9 @@
           expr)))
 
   (as :toplevel (loop :until (token-type-p token :eof)
-                      :collect (statement))))
+                   :for stmt = (statement)
+                   :unless (and (eq (car stmt) :block)
+                                (not (cadr stmt))) :collect stmt)))
 
 (defun parse-js-string (string &optional strict-semicolons)
   (with-input-from-string (in string)
