@@ -38,6 +38,4 @@
 (:do cond body)
 (:for init cond step body)
 (:for-in var name obj body)
-(:switch val body)
-(:case expr)
-(:default)
+(:switch val (case . body)*)
