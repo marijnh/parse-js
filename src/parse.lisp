@@ -18,7 +18,9 @@
     precs))
 
 (defparameter *in-function* nil)
-(defparameter *in-loop* nil)
+(defparameter *label-scope* nil)
+(defmacro with-label-scope (type label &body body)
+  `(let ((*label-scope* (cons (cons ,type ,label) *label-scope*))) ,@body))
 
 (defun/defs parse-js (stream &optional strict-semicolons)
   (def input (lex-js stream))
@@ -64,12 +66,10 @@
   (def as (type &rest args)
     (cons type args))
 
-  (def labels ())
-
   (def parenthesised ()
     (expect #\() (prog1 (expression) (expect #\))))
 
-  (def statement ()
+  (def statement (&optional label)
     ;; if expecting a statement and found a slash as operator,
     ;; it must be a literal regexp.
     (when (and (eq (token-type token) :operator)
@@ -79,7 +79,8 @@
     (case (token-type token)
       ((:num :string :regexp :operator :atom) (simple-statement))
       (:name (if (tokenp (peek) :punc #\:)
-                 (labeled-statement (prog1 (token-value token) (skip 2)))
+                 (let ((label (prog1 (token-value token) (skip 2))))
+                   (as :label label (with-label-scope :label label (statement label))))
                  (simple-statement)))
       (:punc (case (token-value token)
                (#\{ (next) (block*))
@@ -91,10 +92,10 @@
          (:break (break/cont :break))
          (:continue (break/cont :continue))
          (:debugger (semicolon) (as :debugger))
-         (:do (let ((body (let ((*in-loop* t)) (statement))))
+         (:do (let ((body (with-label-scope :loop label (statement))))
                 (expect-key :while)
                 (as :do (parenthesised) body)))
-         (:for (for*))
+         (:for (for* label))
          (:function (function* t))
          (:if (if*))
          (:return (unless *in-function* (error* "'return' outside of function."))
@@ -103,32 +104,26 @@
                             ((can-insert-semicolon) nil)
                             (t (prog1 (expression) (semicolon))))))
          (:switch (let ((val (parenthesised))
-                        (cases nil)
-                        (*in-loop* t))
-                    (expect #\{)
-                    (loop :until (tokenp token :punc #\}) :do
-                       (case (token-value token)
-                         (:case (next)
-                           (push (cons (prog1 (expression) (expect #\:)) nil) cases))
-                         (:default (next) (expect #\:) (push (cons nil nil) cases))
-                         (t (unless cases (unexpected token))
-                            (push (statement) (cdr (car cases))))))
-                    (next)
-                    (as :switch val (loop :for case :in (nreverse cases) :collect
-                                       (cons (car case) (nreverse (cdr case)))))))
+                        (cases nil))
+                    (with-label-scope :switch label
+                      (expect #\{)
+                      (loop :until (tokenp token :punc #\}) :do
+                         (case (token-value token)
+                           (:case (next)
+                             (push (cons (prog1 (expression) (expect #\:)) nil) cases))
+                           (:default (next) (expect #\:) (push (cons nil nil) cases))
+                           (t (unless cases (unexpected token))
+                              (push (statement) (cdr (car cases))))))
+                      (next)
+                      (as :switch val (loop :for case :in (nreverse cases) :collect
+                                         (cons (car case) (nreverse (cdr case))))))))
          (:throw (let ((ex (expression))) (semicolon) (as :throw ex)))
          (:try (try*))
          (:var (prog1 (var*) (semicolon)))
-         (:while (as :while (parenthesised) (let ((*in-loop* t)) (statement))))
+         (:while (as :while (parenthesised) (with-label-scope :loop label (statement))))
          (:with (as :with (parenthesised) (statement)))
          (t (unexpected token))))
       (t (unexpected token))))
-
-  (def labeled-statement (label)
-    (push label labels)
-    (let ((stat (statement)))
-      (pop labels)
-      (as :label label stat)))
 
   (def simple-statement ()
     (let ((exp (expression)))
@@ -136,13 +131,19 @@
       (as :stat exp)))
 
   (def break/cont (type)
-    (unless *in-loop* (error* "'~a' not inside a loop or switch." type))
-    (as type (cond ((semicolonp) (next) nil)
-                   ((can-insert-semicolon) nil)
+    (as type (cond ((or (and (semicolonp) (next)) (can-insert-semicolon))
+                    (unless (loop :for (ltype) :in *label-scope* :do
+                               (when (or (eq ltype :loop) (and (eq type :break) (eq ltype :switch)))
+                                 (return t)))
+                      (error* "'~a' not inside a loop or switch." *label-scope*))
+                    nil)
                    ((token-type-p token :name)
                     (let ((name (token-value token)))
-                      (unless (member name labels :test #'string=)
-                        (error* "Labeled '~a' without matching loop or switch statement." type))
+                      (ecase type
+                        (:break (unless (some (lambda (lb) (equal (cdr lb) name)) *label-scope*)
+                                  (error* "Labeled 'break' without matching labeled statement.")))
+                        (:continue (unless (find (cons :loop name) *label-scope* :test #'equal)
+                                     (error* "Labeled 'continue' without matching labeled loop."))))
                       (next) (semicolon)
                       name)))))
 
@@ -151,7 +152,7 @@
                             :collect (statement)))
       (next)))
 
-  (def for* ()
+  (def for* (label)
     (expect #\()
     (let ((var (tokenp token :keyword :var)))
       (when var (next))
@@ -160,12 +161,12 @@
             (skip 2)
             (let ((obj (expression)))
               (expect #\))
-              (as :for-in var name obj (let ((*in-loop* t)) (statement)))))
+              (as :for-in var name obj (with-label-scope :loop label (statement)))))
           (let ((init (prog1 (cond ((semicolonp) nil) (var (var*)) (t (expression))) (expect #\;)))
                 (test (prog1 (unless (semicolonp) (expression)) (expect #\;)))
                 (step (if (tokenp token :punc #\)) nil (expression))))
             (expect #\))
-            (as :for init test step (let ((*in-loop* t)) (statement)))))))
+            (as :for init test step (with-label-scope :loop label (statement)))))))
 
   (def function* (statement)
     (with-defs
@@ -180,9 +181,8 @@
                           :collect (prog1 (token-value token) (next))))
       (next)
       (expect #\{)
-      (def body (let ((*in-function* t) (*in-loop* nil))
-                  (loop :until (tokenp token :punc #\})
-                        :collect (statement))))
+      (def body (let ((*in-function* t) (*label-scope* ()))
+                  (loop :until (tokenp token :punc #\}) :collect (statement))))
       (next)
       (as (if statement :defun :function) name argnames body)))
 
@@ -194,7 +194,7 @@
         (next)
         (setf else (statement)))
       (as :if condition body else)))
-      
+
   (def ensure-block ()
     (expect #\{)
     (block*))
