@@ -135,7 +135,7 @@
                     (unless (loop :for (ltype) :in *label-scope* :do
                                (when (or (eq ltype :loop) (and (eq type :break) (eq ltype :switch)))
                                  (return t)))
-                      (error* "'~a' not inside a loop or switch." *label-scope*))
+                      (error* "'~a' not inside a loop or switch." type))
                     nil)
                    ((token-type-p token :name)
                     (let ((name (token-value token)))
