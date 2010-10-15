@@ -62,7 +62,8 @@
                (loop :for ch := (peek) :while (and ch (digit-char-p ch radix)) :do
                   (write-char (next) out)))))
     (let ((minus (case (peek) (#\+ (next) nil) (#\- (next) t)))
-          (body (digits 10)))
+          (body (digits 10))
+          (*read-default-float-format* 'double-float))
       (flet ((ret (x)
                (return-from read-js-number
                  (and x (or junk-allowed (eq (peek) nil)) (if minus (- x) x)))))
