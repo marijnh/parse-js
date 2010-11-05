@@ -1,5 +1,4 @@
 (asdf:defsystem #:parse-js
-  :depends-on (#:cl-ppcre)
   :components
   ((:module :src
             :components ((:file "package")

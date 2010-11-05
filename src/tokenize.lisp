@@ -87,7 +87,12 @@
                  (handler-case (ret (* base (expt 10d0 (if expt-neg (- expt) expt))))
                    (floating-point-overflow () (ret :infinity))
                    (floating-point-underflow () (ret 0d0)))))
-              ((cl-ppcre:scan "^0[0-7]+$" body) (ret (parse-integer body :radix 8)))
+              ((equal body "") (ret nil))
+              ((and (char= (char body 0) #\0)
+                    (loop :for i :from 1 :below (length body) :do
+                       (unless (digit-char-p (char body i)) (return nil))
+                       :finally (return t)))
+               (ret (parse-integer body :radix 8)))
               ((equal body "") (ret nil))
               (t (ret (parse-integer body))))))))
 
