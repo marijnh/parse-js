@@ -30,7 +30,7 @@
       (setf (gethash (string-downcase (string op)) ops) op))
     ops))
 
-(defparameter *whitespace-chars* (concatenate 'string (list #\space #\tab #\vt #\page #\return #\newline
+(defparameter *whitespace-chars* (concatenate 'string (list #\space #\tab #.(code-char 11) #\page #\return #\newline
                                                             (code-char #xa0) (code-char #x2028) (code-char #x2029))))
 (defparameter *line-terminators* (concatenate 'string (list #\newline #\return (code-char #x2028) (code-char #x2029))))
 
@@ -159,7 +159,7 @@
     (let ((ch (next t)))
       (case ch
         (#\n #\newline) (#\r #\return) (#\t #\tab)
-        (#\b #\backspace) (#\v #\vt) (#\f #\page) (#\0 #\null)
+        (#\b #\backspace) (#\v #.(code-char 11)) (#\f #\page) (#\0 #\null)
         (#\x (code-char (hex-bytes 2 #\x)))
         (#\u (code-char (hex-bytes 4 #\u)))
         (#\newline nil) (t ch))))
