@@ -41,7 +41,7 @@
                     :throw :true :try :typeof :var :void :while :with))
       (setf (gethash (string-downcase (string word)) keywords) word))
     keywords))
-(defparameter *keywords-before-expression* '(:return :new :delete :throw :else))
+(defparameter *keywords-before-expression* '(:return :new :delete :throw :else :case))
 (defparameter *atom-keywords* '(:false :null :true :undefined))
 (defparameter *reserved-words*
   (let ((words (make-hash-table :test 'equal)))
