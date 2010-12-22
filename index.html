@@ -48,29 +48,26 @@
     <h2>Reference</h2>
 
     <p class="def" id="parse-js">
-      <span>function</span> parse-js (stream &amp;optional strict-semicolons)
+      <span>function</span> parse-js (input &amp;key ecma-version strict-semicolons reserved-words)
       <br/>&#8594; syntax-tree
     </p>
 
-    <p class="desc">Reads a program from a stream, and produces an
-    abstract syntax tree, which is a nested structure consisting of
-    lists starting with keywords. The exact format of this structure
-    is not very well documented, but the file <a
+    <p class="desc">Reads a program from a string or a stream, and
+    produces an abstract syntax tree, which is a nested structure
+    consisting of lists starting with keywords. The exact format of
+    this structure is not very well documented, but the file <a
     href="as.txt">as.txt</a> gives a basic description.</p>
 
-    <p class="desc">When <code>strict-semicolons</code> is true, the
-    parser will complain about missing semicolons, even when they
-    would have been inserted by 'automatic semicolon insertion'
-    rules.</p>
-
-    <p class="def" id="parse-js-string">
-      <span>function</span> parse-js-string (string &amp;optional strict-semicolons)
-      <br/>&#8594; syntax-tree
-    </p>
-
-    <p class="desc">Like <a
-    href="#parse-js"><code>parse-js</code></a>, but takes a string as
-    input instead of a stream.</p>
+    <p class="desc">The keyword arguments can be used to influence the
+    parsing mode. <code>emca-version</code> can be <code>3</code> or
+    <code>5</code>, and influences the standard that is followed. The
+    default is 3. Support for version 5 is incomplete at this time.
+    When <code>strict-semicolons</code> is true, the parser will
+    complain about missing semicolons, even when they would have been
+    inserted by 'automatic semicolon insertion' rules. Finally, if
+    <code>reserved-words</code> is true, the parser will complain
+    about 'future reserved words', such as <code>class</code> being
+    used.</p>
 
     <p class="def" id="js-parse-error">
       <span>class</span> js-parse-error

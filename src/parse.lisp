@@ -22,7 +22,15 @@
 (defmacro with-label-scope (type label &body body)
   `(let ((*label-scope* (cons (cons ,type ,label) *label-scope*))) ,@body))
 
-(defun/defs parse-js (stream &optional strict-semicolons)
+(defun parse-js (input &key strict-semicolons (ecma-version 3) reserved-words)
+  (check-type ecma-version (member 3 5))
+  (let ((*ecma-version* ecma-version)
+        (*check-for-reserved-words* reserved-words))
+    (if (stringp input)
+        (with-input-from-string (in input) (parse-js* in strict-semicolons))
+        (parse-js* input strict-semicolons))))
+
+(defun/defs parse-js* (stream &optional strict-semicolons)
   (def input (lex-js stream))
   (def token (funcall input))
   (def peeked nil)
@@ -267,11 +275,22 @@
     (as :object (loop :for first := t :then nil
                       :until (tokenp token :punc #\})
                       :unless first :do (expect #\,)
-                      :until (tokenp token :punc #\})
-                      :collect (let ((name (as-property-name)))
-                                 (expect #\:)
-                                 (cons name (expression nil)))
-                      :finally (next))))
+                      :until (tokenp token :punc #\}) :collect
+                   (let ((name (as-property-name)))
+                     (cond ((tokenp token :punc #\:)
+                            (next) (cons name (expression nil)))
+                           ((and (eql *ecma-version* 5) (or (equal name "get") (equal name "set")))
+                            (let ((name1 (as-property-name))
+                                  (body (progn (unless (tokenp token :punc #\() (unexpected token))
+                                               (function* nil))))
+                              ;; Check argument count
+                              (if (equal name "get")
+                                  (when (third body) (error* "Getters should not take arguments."))
+                                  (unless (equal (length (third body)) 1)
+                                    (error* "Setters should take a single argument.")))
+                              (list* name1 (if (equal name "get") :get :set) body)))
+                           (t (unexpected token))))
+                   :finally (next))))
 
   (def as-property-name ()
     (if (member (token-type token) '(:num :string))
@@ -345,7 +364,3 @@
 
   (as :toplevel (loop :until (token-type-p token :eof)
                       :collect (statement))))
-
-(defun parse-js-string (string &optional strict-semicolons)
-  (with-input-from-string (in string)
-    (parse-js in strict-semicolons)))

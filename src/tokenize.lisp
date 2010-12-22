@@ -43,7 +43,7 @@
     keywords))
 (defparameter *keywords-before-expression* '(:return :new :delete :throw :else :case))
 (defparameter *atom-keywords* '(:false :null :true :undefined))
-(defparameter *reserved-words*
+(defparameter *reserved-words-ecma-3*
   (let ((words (make-hash-table :test 'equal)))
     (dolist (word '("abstract" "enum" "int" "short" "boolean" "export" "interface" "static"
                     "byte" "extends" "long" "super" "char" "final" "native" "synchronized"
@@ -51,7 +51,13 @@
                     "debugger" "implements" "protected" "volatile" "double" "import" "public"))
       (setf (gethash word words) t))
     words))
-(defparameter *check-for-reserved-words* t)
+(defparameter *reserved-words-ecma-5*
+  (let ((words (make-hash-table :test 'equal)))
+    (dolist (word '("class" "enum" "extends" "super" "const" "export" "import"))
+      (setf (gethash word words) t))
+    words))
+(defparameter *check-for-reserved-words* nil)
+(defparameter *ecma-version* 3)
 
 (defun read-js-number (stream &key junk-allowed start-char)
   (labels ((peek () (if start-char start-char (peek-char nil stream nil)))
@@ -239,7 +245,8 @@
                             ((and ch (identifier-char-p ch)) (write-char (next)))
                             (t (return))))))
            (keyword (and (not unicode-escape) (gethash word *keywords*))))
-      (cond ((and *check-for-reserved-words* (not unicode-escape) (gethash word *reserved-words*))
+      (cond ((and *check-for-reserved-words* (not unicode-escape)
+                  (gethash word (case *ecma-version* (3 *reserved-words-ecma-3*) (5 *reserved-words-ecma-5*))))
              (js-parse-error "'~a' is a reserved word." word))
             ((not keyword) (token :name word))
             ((gethash word *operators*) (token :operator keyword))
