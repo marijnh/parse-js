@@ -283,11 +283,6 @@
                             (let ((name1 (as-property-name))
                                   (body (progn (unless (tokenp token :punc #\() (unexpected token))
                                                (function* nil))))
-                              ;; Check argument count
-                              (if (equal name "get")
-                                  (when (third body) (error* "Getters should not take arguments."))
-                                  (unless (equal (length (third body)) 1)
-                                    (error* "Setters should take a single argument.")))
                               (list* name1 (if (equal name "get") :get :set) body)))
                            (t (unexpected token))))
                    :finally (next))))
