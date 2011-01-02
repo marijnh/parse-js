@@ -295,7 +295,7 @@
   (def as-name ()
     (case (token-type token)
       (:name (prog1 (token-value token) (next)))
-      ((:operator :keyword :atom) (prog1 (symbol-name (token-value token)) (next)))
+      ((:operator :keyword :atom) (prog1 (string-downcase (symbol-name (token-value token))) (next)))
       (t (unexpected token))))
 
   (def subscripts (expr allow-calls)
