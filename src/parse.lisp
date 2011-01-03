@@ -359,3 +359,6 @@
 
   (as :toplevel (loop :until (token-type-p token :eof)
                       :collect (statement))))
+
+(defun parse-js-string (&rest args)
+  (apply 'parse-js args))
