@@ -260,16 +260,17 @@
              (subscripts (prog1 atom (next)) allow-calls)))
           (t (unexpected token))))
 
-  (def expr-list (closing &optional allow-trailing-comma)
-    (prog1 (loop :for first := t :then nil
-                 :until (tokenp token :punc closing)
-                 :unless first :do (expect #\,)
-                 :when (and allow-trailing-comma (tokenp token :punc closing)) :do (return)
-                 :collect (expression nil))
-      (next)))
+  (def expr-list (closing &optional allow-trailing-comma allow-empty)
+    (let ((elts ()))
+      (loop :for first := t :then nil :until (tokenp token :punc closing) :do
+         (unless first (expect #\,))
+         (when (and allow-trailing-comma (tokenp token :punc closing)) (return))
+         (push (unless (and allow-empty (tokenp token :punc #\,)) (expression nil)) elts))
+      (next)
+      (nreverse elts)))
 
   (def array* ()
-    (as :array (expr-list #\] t)))
+    (as :array (expr-list #\] t t)))
 
   (def object* ()
     (as :object (loop :for first := t :then nil
