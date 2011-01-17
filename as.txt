@@ -37,5 +37,5 @@
 (:while cond body)
 (:do cond body)
 (:for init cond step body)
-(:for-in var name obj body)
+(:for-in init lhs obj body)
 (:switch val (case . body)*)
