@@ -4,7 +4,7 @@
 (defparameter *unary-postfix* '(:-- :++))
 (defparameter *assignment*
   (let ((assign (make-hash-table)))
-    (dolist (op '(:+= :-= :/= :*= :%= :>>= :<<= :>>>= :~= :%= :|\|=| :^= :&=))
+    (dolist (op '(:+= :-= :/= :*= :%= :>>= :<<= :>>>= :|\|=| :^= :&=))
       (setf (gethash op assign) (intern (subseq (string op) 0 (1- (length (string op)))) :keyword)))
     (setf (gethash := assign) t)
     assign))
