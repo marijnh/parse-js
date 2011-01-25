@@ -1,6 +1,6 @@
 (in-package #:parse-js)
 
-(defstruct token type value line char newline-before)
+(defstruct token type value line char pos newline-before comments-before)
 (defun tokenp (token type value)
   (and (eq (token-type token) type)
        (eql (token-value token) value)))
@@ -11,6 +11,7 @@
 
 (defvar *line*)
 (defvar *char*)
+(defvar *position*)
 
 (define-condition js-parse-error (simple-error)
   ((line :initform *line* :reader js-parse-error-line)
@@ -105,15 +106,18 @@
               ((equal body "") (ret nil))
               (t (ret (parse-integer body))))))))
 
-(defun/defs lex-js (stream)
+(defun/defs lex-js (stream &key include-comments)
   (def expression-allowed t)
   (def newline-before nil)
   (def line 1)
   (def char 0)
+  (def position 0)
+  (def comments-before nil)
 
   (def start-token ()
     (setf *line* line
-          *char* char))
+          *char* char
+          *position* position))
   (def token (type value)
     (setf expression-allowed
           (or (and (eq type :operator)
@@ -122,14 +126,18 @@
                    (member value *keywords-before-expression*))
               (and (eq type :punc)
                    (find value "[{}(,.;:"))))
-    (prog1 (make-token :type type :value value :line *line* :char *char* :newline-before newline-before)
-      (setf newline-before nil)))
+    (prog1 (make-token :type type :value value :line *line* :char *char* :pos *position*
+                       :newline-before newline-before
+                       :comments-before (reverse comments-before))
+      (setf newline-before nil)
+      (setf comments-before nil)))
 
   (def peek ()
     (peek-char nil stream nil))
   (def next (&optional eof-error)
     (let ((ch (read-char stream eof-error)))
       (when ch
+        (incf position)
         (if (find ch *line-terminators*)
             (setf line (1+ line) char 0 newline-before t)
             (incf char)))
@@ -186,16 +194,44 @@
                                  (t (write-char ch)))))))
         (end-of-file () (js-parse-error "Unterminated string constant.")))))
 
-  (def skip-line-comment ()
+  (def add-comment (type c)
+    (when include-comments
+      ;; doing this instead of calling (token) as we don't want
+      ;; to put comments-before into a comment token
+      (push (make-token :type type
+                        :value c
+                        :line *line*
+                        :char *char*
+                        :pos *position*
+                        :newline-before newline-before)
+            comments-before)))
+
+  (def read-line-comment ()
     (next)
-    (loop :for ch := (next)
-          :until (or (find ch *line-terminators*) (not ch))))
-  (def skip-multiline-comment ()
+    (if include-comments
+        (add-comment :comment1
+                     (with-output-to-string (out)
+                       (loop :for ch := (next)
+                          :until (or (find ch *line-terminators*) (not ch))
+                          :do (write-char ch out))))
+        (loop :for ch := (next)
+           :until (or (find ch *line-terminators*) (not ch)))))
+
+  (def read-multiline-comment ()
     (next)
-    (loop :with star := nil
-          :for ch := (or (next) (js-parse-error "Unterminated comment."))
-          :until (and star (eql ch #\/))
-          :do (setf star (eql ch #\*))))
+    (if include-comments
+        (add-comment :comment2
+                     (with-output-to-string (out)
+                       (loop :with star := nil
+                          :for ch := (or (next) (js-parse-error "Unterminated comment."))
+                          :until (and star (eql ch #\/))
+                          :do
+                          (setf star (eql ch #\*))
+                          (write-char ch out))))
+        (loop :with star := nil
+           :for ch := (or (next) (js-parse-error "Unterminated comment."))
+           :until (and star (eql ch #\/))
+           :do (setf star (eql ch #\*)))))
 
   (def read-regexp ()
     (handler-case
@@ -229,9 +265,9 @@
   (def handle-slash ()
     (next)
     (case (peek)
-      (#\/ (skip-line-comment)
+      (#\/ (read-line-comment)
            (next-token))
-      (#\* (skip-multiline-comment)
+      (#\* (read-multiline-comment)
            (next-token))
       (t (if expression-allowed
              (read-regexp)
