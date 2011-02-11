@@ -31,7 +31,7 @@
         (parse-js* input strict-semicolons))))
 
 (defun/defs parse-js* (stream &optional strict-semicolons)
-  (def input (lex-js stream))
+  (def input (if (functionp stream) stream (lex-js stream)))
   (def token (funcall input))
   (def peeked nil)
 
