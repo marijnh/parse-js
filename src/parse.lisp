@@ -257,8 +257,6 @@
 
   (def expr-atom (allow-calls)
     (cond ((tokenp token :operator :new) (next) (new*))
-          ((and (token-type-p token :operator) (member (token-value token) *unary-prefix*))
-           (make-unary :unary-prefix (prog1 (token-value token) (next)) (expr-atom allow-calls)))
           ((token-type-p token :punc)
            (case (token-value token)
              (#\( (next) (subscripts (prog1 (expression) (expect #\))) allow-calls))
@@ -327,8 +325,6 @@
            (next)
            (let ((args (expr-list #\))))
              (subscripts (as :call expr args) t)))
-          ((and (token-type-p token :operator) (member (token-value token) *unary-postfix*) (not (token-newline-before token)))
-           (subscripts (prog1 (make-unary :unary-postfix (token-value token) expr) (next)) allow-calls))
           (t expr)))
 
   (def make-unary (tag op expr)
@@ -336,17 +332,28 @@
       (error* "Invalid use of '~a' operator." op))
     (as tag op expr))
 
+  (def maybe-unary (allow-calls)
+    (if (and (token-type-p token :operator) (member (token-value token) *unary-prefix*))
+        (make-unary :unary-prefix (prog1 (token-value token) (next)) (maybe-unary allow-calls))
+        (let ((val (expr-atom allow-calls)))
+          (loop :while (and (token-type-p token :operator)
+                            (member (token-value token) *unary-postfix*)
+                            (not (token-newline-before token))) :do
+             (setf val (make-unary :unary-postfix (token-value token) val))
+             (next))
+          val)))
+
   (def expr-op (left min-prec no-in)
     (let* ((op (and (token-type-p token :operator) (or (not no-in) (not (eq (token-value token) :in)))
                     (token-value token)))
            (prec (and op (gethash op *precedence*))))
       (if (and prec (> prec min-prec))
-          (let ((right (progn (next) (expr-op (expr-atom t) prec no-in))))
+          (let ((right (progn (next) (expr-op (maybe-unary t) prec no-in))))
             (expr-op (as :binary op left right) min-prec no-in))
           left)))
 
   (def expr-ops (no-in)
-    (expr-op (expr-atom t) 0 no-in))
+    (expr-op (maybe-unary t) 0 no-in))
 
   (def maybe-conditional (no-in)
     (let ((expr (expr-ops no-in)))
