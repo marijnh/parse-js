@@ -186,9 +186,7 @@
                  (regular-for label var))))
           (t (let ((init (expression t t)))
                (if (tokenp token :operator :in)
-                   (if (is-assignable init)
-                       (for-in label nil init)
-                       (error* "Bad for/in syntax."))
+                   (for-in label nil init)
                    (regular-for label init))))))
 
   (def function* (statement)
@@ -327,19 +325,14 @@
              (subscripts (as :call expr args) t)))
           (t expr)))
 
-  (def make-unary (tag op expr)
-    (when (and (member op '(:++ :--)) (not (is-assignable expr)))
-      (error* "Invalid use of '~a' operator." op))
-    (as tag op expr))
-
   (def maybe-unary (allow-calls)
     (if (and (token-type-p token :operator) (member (token-value token) *unary-prefix*))
-        (make-unary :unary-prefix (prog1 (token-value token) (next)) (maybe-unary allow-calls))
+        (as :unary-prefix (prog1 (token-value token) (next)) (maybe-unary allow-calls))
         (let ((val (expr-atom allow-calls)))
           (loop :while (and (token-type-p token :operator)
                             (member (token-value token) *unary-postfix*)
                             (not (token-newline-before token))) :do
-             (setf val (make-unary :unary-postfix (token-value token) val))
+             (setf val (as :unary-postfix (token-value token) val))
              (next))
           val)))
 
@@ -363,16 +356,10 @@
             (as :conditional expr yes (expression nil no-in)))
           expr)))
 
-  (def is-assignable (expr)
-    (case (car expr)
-      ((:dot :sub) t) (:name (not (equal (second expr) "this")))))
-
   (def maybe-assign (no-in)
     (let ((left (maybe-conditional no-in)))
       (if (and (token-type-p token :operator) (gethash (token-value token) *assignment*))
-          (if (is-assignable left)
-              (as :assign (gethash (token-value token) *assignment*) left (progn (next) (maybe-assign no-in)))
-              (error* "Invalid assignment."))
+          (as :assign (gethash (token-value token) *assignment*) left (progn (next) (maybe-assign no-in)))
           left)))
 
   (def expression (&optional (commas t) (no-in nil))
