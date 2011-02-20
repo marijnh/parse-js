@@ -251,7 +251,7 @@
                                        (next)
                                        (code-char (hex-bytes 4 #\u)))
                                      ch))))
-                (read-while (lambda (ch) (find ch "gim")))))
+                (read-while #'identifier-char-p)))
       (end-of-file () (js-parse-error "Unterminated regular expression."))))
 
   (def read-operator (&optional start)
