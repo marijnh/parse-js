@@ -31,9 +31,11 @@
       (setf (gethash (string-downcase (string op)) ops) op))
     ops))
 
-(defparameter *whitespace-chars* (concatenate 'string (list #\space #\tab #.(code-char 11) #\page #\return #\newline
-                                                            (code-char #xa0) (code-char #x2028) (code-char #x2029))))
-(defparameter *line-terminators* (concatenate 'string (list #\newline #\return (code-char #x2028) (code-char #x2029))))
+(defparameter *whitespace-chars*
+  (concatenate '(vector character) (list #\space #\tab #.(code-char 11) #\page #\return #\newline
+                                         (code-char #xa0) (code-char #x2028) (code-char #x2029))))
+(defparameter *line-terminators*
+  (concatenate '(vector character) (list #\newline #\return (code-char #x2028) (code-char #x2029))))
 
 (defparameter *keywords*
   (let ((keywords (make-hash-table :test 'equal)))
