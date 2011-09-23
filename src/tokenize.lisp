@@ -185,7 +185,7 @@
         (#\b #\backspace) (#\v #.(code-char 11)) (#\f #\page) (#\0 #\null)
         (#\x (code-char (hex-bytes 2 #\x)))
         (#\u (code-char (hex-bytes 4 #\u)))
-        (#\newline #\newline)
+        (#\newline nil)
         (t (let ((num (digit-char-p ch 8)))
              (if num
                  (loop :for nx := (digit-char-p (peek) 8) :do
