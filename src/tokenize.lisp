@@ -296,7 +296,7 @@
                             (t (return))))))
            (keyword (and (not unicode-escape) (gethash word *keywords*))))
       (cond ((and *check-for-reserved-words* (not unicode-escape)
-                  (gethash word (case *ecma-version* (3 *reserved-words-ecma-3*) (5 *reserved-words-ecma-5*))))
+                  (gethash word (ecase *ecma-version* (3 *reserved-words-ecma-3*) (5 *reserved-words-ecma-5*))))
              (js-parse-error "'~a' is a reserved word." word))
             ((not keyword) (token :name word))
             ((gethash word *operators*) (token :operator keyword))
