@@ -136,12 +136,14 @@
 
   (def peek ()
     (peek-char nil stream nil))
-  (def next (&optional eof-error)
+  (def next (&optional eof-error in-string)
     (let ((ch (read-char stream eof-error)))
       (when ch
         (incf position)
         (if (find ch *line-terminators*)
-            (setf line (1+ line) char 0 newline-before t)
+            (progn
+              (setf line (1+ line) char 0)
+              (unless in-string (setf newline-before t)))
             (incf char)))
       ch))
 
@@ -176,14 +178,14 @@
                     (incf num (* digit (expt 16 pos)))
                     (js-parse-error "Invalid \\~a escape pattern." char)))
           :finally (return num)))
-  (def read-escaped-char ()
-    (let ((ch (next t)))
+  (def read-escaped-char (&optional in-string)
+    (let ((ch (next t in-string)))
       (case ch
         (#\n #\newline) (#\r #\return) (#\t #\tab)
         (#\b #\backspace) (#\v #.(code-char 11)) (#\f #\page) (#\0 #\null)
         (#\x (code-char (hex-bytes 2 #\x)))
         (#\u (code-char (hex-bytes 4 #\u)))
-        (#\newline nil)
+        (#\newline #\newline)
         (t (let ((num (digit-char-p ch 8)))
              (if num
                  (loop :for nx := (digit-char-p (peek) 8) :do
@@ -197,7 +199,7 @@
           (token :string
                  (with-output-to-string (*standard-output*)
                    (loop (let ((ch (next t)))
-                           (cond ((eql ch #\\) (let ((ch (read-escaped-char))) (when ch (write-char ch))))
+                           (cond ((eql ch #\\) (let ((ch (read-escaped-char t))) (when ch (write-char ch))))
                                  ((find ch *line-terminators*) (js-parse-error "Line terminator inside of string."))
                                  ((eql ch quote) (return))
                                  (t (write-char ch)))))))
@@ -296,7 +298,7 @@
                             (t (return))))))
            (keyword (and (not unicode-escape) (gethash word *keywords*))))
       (cond ((and *check-for-reserved-words* (not unicode-escape)
-                  (gethash word (case *ecma-version* (3 *reserved-words-ecma-3*) (5 *reserved-words-ecma-5*))))
+                  (gethash word (ecase *ecma-version* (3 *reserved-words-ecma-3*) (5 *reserved-words-ecma-5*))))
              (js-parse-error "'~a' is a reserved word." word))
             ((not keyword) (token :name word))
             ((gethash word *operators*) (token :operator keyword))
