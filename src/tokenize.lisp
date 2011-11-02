@@ -256,12 +256,18 @@
                        (when (and inset (not backslash) (eql ch #\])) (setf inset nil)))
                      (setf backslash (and (eql ch #\\) (not backslash)))
                      ;; Handle \u sequences, since CL-PPCRE does not understand them.
-                     (write-char (if (and (eql ch #\\) (eql (peek) #\u))
-                                     (progn
-                                       (setf backslash nil)
-                                       (next)
-                                       (code-char (hex-bytes 4 #\u)))
-                                     ch))))
+                     (if (and backslash (eql (peek) #\u))
+                         (let* ((code (progn
+                                        (setf backslash nil)
+                                        (next)
+                                        (hex-bytes 4 #\u)))
+                                (ch (code-char code)))
+                           ;; on CCL, parsing /\uFFFF/ fails because (code-char #xFFFF) returns NIL.
+                           ;; so when NIL, we better use the original sequence.
+                           (if ch
+                               (write-char ch)
+                               (format t "\\u~4,'0X" code)))
+                         (write-char ch))))
                 (read-while #'identifier-char-p)))
       (end-of-file () (js-parse-error "Unterminated regular expression."))))
 
