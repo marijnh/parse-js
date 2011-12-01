@@ -1,4 +1,5 @@
 (asdf:defsystem #:parse-js
+  :description "JavaScript parser"
   :components
   ((:module :src
             :components ((:file "package")
