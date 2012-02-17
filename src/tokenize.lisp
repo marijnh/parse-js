@@ -127,7 +127,7 @@
               (and (eq type :keyword)
                    (member value *keywords-before-expression*))
               (and (eq type :punc)
-                   (find value "[{}(,.;:"))))
+                   (find value "[{(,.;:"))))
     (prog1 (make-token :type type :value value :line *line* :char *char* :pos *position*
                        :newline-before newline-before
                        :comments-before (reverse comments-before))
