@@ -42,7 +42,12 @@
 
     <h2>News</h2>
 
-    <p><em>03-01-2011:</em> New release. Lots of comformance fixes,
+    <p><em>07-02-2013:</em> New release. More corner-case bugs fixed.
+    Representation of for-in nodes changed to accomodate things
+    like <code>for (x.y in z)</code>. Array element expressions may
+    now be nil, when parsing a literal like <code>[1,,3]</code>.</p>
+
+    <p><em>03-01-2011:</em> New release. Lots of conformance fixes,
     driven
     by <a href="http://marijnhaverbeke.nl/cl-javascript">CL-JavaScript</a>
     and <a href="https://github.com/mishoo/uglifyjs">UglifyJS</a>
