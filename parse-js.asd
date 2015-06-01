@@ -1,5 +1,7 @@
 (asdf:defsystem #:parse-js
   :description "JavaScript parser"
+  :author "Marijn Haverbeke <marijnh@gmail.com>"
+  :license "BSD"
   :components
   ((:module :src
             :components ((:file "package")
