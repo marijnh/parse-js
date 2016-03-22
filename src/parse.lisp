@@ -23,6 +23,7 @@
   `(let ((*label-scope* (cons (cons ,type ,label) *label-scope*))) ,@body))
 
 (defun parse-js (input &key strict-semicolons (ecma-version 3) reserved-words)
+  (check-type input (or string stream))
   (check-type ecma-version (member 3 5))
   (let ((*ecma-version* ecma-version)
         (*check-for-reserved-words* reserved-words)
