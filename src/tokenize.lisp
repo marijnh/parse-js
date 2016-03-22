@@ -63,6 +63,7 @@
 (defparameter *ecma-version* 3)
 
 (defun read-js-number (stream &key junk-allowed)
+  (check-type stream stream)
   (flet ((peek-1 () (peek-char nil stream nil nil))
          (next-1 () (read-char stream nil nil)))
     (read-js-number-1 #'peek-1 #'next-1 :junk-allowed junk-allowed)))
