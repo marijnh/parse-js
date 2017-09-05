@@ -40,8 +40,8 @@
 (defparameter *keywords*
   (let ((keywords (make-hash-table :test 'equal)))
     (dolist (word '(:break :case :catch :continue :debugger :default :delete :do :else :false
-                    :finally :for :function :if :in :instanceof :new :null :return :switch
-                    :throw :true :try :typeof :var :void :while :with))
+                    :finally :for :function :if :in :instanceof :new :of :null :return :switch
+                    :throw :true :try :typeof :var :let :const :void :while :with))
       (setf (gethash (string-downcase (string word)) keywords) word))
     keywords))
 (defparameter *keywords-before-expression* '(:return :new :delete :throw :else :case))
